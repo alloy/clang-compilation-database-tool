@@ -38,7 +38,7 @@ $ chmod +x clang-with-compilation-db
 ```
 
 Then add a ‘User-Defined Setting’ to your Xcode target’s build settings with the key `CC` and the value
-`clang-with-compilation-db`.
+`${SRCROOT}/clang-with-compilation-db`.
 
 ----
 
