@@ -52,6 +52,52 @@ CreateCollectionDB(NSString *buildDir)
     [stream close];
 }
 
+static NSString *
+ExpandPath(NSString *path)
+{
+    NSURL *expandedURL = [[[NSURL fileURLWithPath:path] absoluteURL] URLByStandardizingPath];
+    NSError *error = nil;
+    if (![expandedURL checkResourceIsReachableAndReturnError:&error]) {
+        fprintf(stderr, "%s\n", error.localizedDescription.UTF8String);
+        return nil;
+    }
+    return expandedURL.path;
+}
+
+static int
+ShowCommandForFile(NSString *compilationDatabaseFilename, NSString *sourceFilename)
+{
+    NSString *compilationDatabasePath = ExpandPath(compilationDatabaseFilename);
+    NSString *sourcePath = ExpandPath(sourceFilename);
+    NSString *command = nil;
+
+    if (compilationDatabasePath && sourcePath) {
+        NSInputStream *stream = [NSInputStream inputStreamWithFileAtPath:compilationDatabasePath];
+        [stream open];
+        NSError *error = nil;
+        NSArray *commands = [NSJSONSerialization JSONObjectWithStream:stream options:0 error:&error];
+        if (error) {
+            fprintf(stderr, "Unable to de-serialize compilation DB: %s\n", error.localizedDescription.UTF8String);
+        } else {
+            for (NSDictionary *commandInfo in commands) {
+                if ([commandInfo[@"file"] isEqualToString:sourcePath]) {
+                    command = commandInfo[@"command"];
+                    break;
+                }
+            }
+        }
+        [stream close];
+    }
+
+    if (command) {
+        printf("%s\n", command.UTF8String);
+        return 0;
+    } else {
+        fprintf(stderr, "Unable to locate command for source file at path `%s'\n", sourcePath.UTF8String);
+        return 1;
+    }
+}
+
 int
 main(int argc, char **argv)
 {
@@ -73,12 +119,15 @@ main(int argc, char **argv)
     } else if (argc == 3 && strncmp(argv[1], "collect", 7) == 0) {
         CreateCollectionDB(@(argv[2]));
         return 0;
+    } else if (argc == 4 && strncmp(argv[1], "command", 7) == 0) {
+        return ShowCommandForFile(@(argv[2]), @(argv[3]));
     }
 
     char *tool = basename(argv[0]);
     fprintf(stderr, "Usage:\n" \
                     "\t$ %s dump [COMPILATION UNIT ARGUMENTS]\n" \
-                    "\t$ %s collect path/to/DerivedData\n",
-                    tool, tool);
+                    "\t$ %s collect path/to/DerivedData\n" \
+                    "\t$ %s command path/to/compile_commands.json path/to/source_file\n",
+                    tool, tool, tool);
     return 1;
 }
