@@ -46,13 +46,13 @@ Add a ‘Run Script Phase’ to your Xcode target and have it contain something 
 
 ```shell
 if type -p clang-compilation-database-tool > /dev/null 2>&1; then
-  clang-compilation-database-tool collect "${OBJECT_FILE_DIR_normal}" > "${SRCROOT}/compiler_commands.json"
+  clang-compilation-database-tool collect "${OBJECT_FILE_DIR_normal}" > "${SRCROOT}/compile_commands.json"
 fi
 ```
 
 ----
 
-This generate a `compiler_commands.json` file in the source root after every build, but only if the
+This generate a `compile_commands.json` file in the source root after every build, but only if the
 `clang-compilation-database-tool` tool is available.
 
 You should perform a clean build once you’ve got this setup in order to get a full compilation database.
